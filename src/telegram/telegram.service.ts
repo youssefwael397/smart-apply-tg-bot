@@ -119,9 +119,11 @@ export class TelegramService implements OnModuleInit {
       
       // Set bot commands and description
       await this.bot.setMyCommands([
-        { command: 'start', description: 'Start the bot and get started' },
-        { command: 'uploadcv', description: 'Upload your CV for analysis' },
-        { command: 'search', description: 'Search for jobs based on your CV' },
+        { command: 'start', description: 'Start a new session' },
+        { command: 'upload_new_cv', description: 'Upload a new CV' },
+        { command: 'suggest_new_job_titles', description: 'Get job title suggestions' },
+        { command: 'search_for_jobs', description: 'Search for job listings' },
+        { command: 'update_location', description: 'Update preferred location' },
         { command: 'help', description: 'Show help information' }
       ]);
       
@@ -411,20 +413,15 @@ export class TelegramService implements OnModuleInit {
       
       await this.bot.sendMessage(
         chatId,
-        `💼 Here are some job title suggestions based on your CV:\n\n${titlesText}\n\nWhat would you like to do next?`,
+        `🎯 Here are some job titles that might suit your profile:\n\n${titlesText}\n\nUse /search_for_jobs to search for these jobs or /upload_new_cv to analyze a different CV.`,
         {
           reply_markup: {
-            keyboard: [
-              [{ text: '🔍 Search Jobs' }],
-              [{ text: '🔄 Analyze CV Again' }]
-            ],
-            resize_keyboard: true,
-            one_time_keyboard: true
+            remove_keyboard: true
           }
         }
       );
-
-      this.userStates.set(chatId, 'AWAITING_CONFIRMATION');
+    
+      this.userStates.set(chatId, 'IDLE');
     } catch (error) {
       Logger.error('Error analyzing CV:', error);
       await this.bot.sendMessage(chatId, '❌ Error analyzing your CV. Please try again.');
@@ -496,39 +493,14 @@ export class TelegramService implements OnModuleInit {
       this.userStates.set(chatId, 'IDLE');
       return;
     }
-
-    const lowerResponse = response.toLowerCase().trim();
     
-    if (lowerResponse === 'search jobs' || lowerResponse === '🔍 search jobs') {
-      await this.handleJobSearch(chatId, user);
-    } else if (lowerResponse === 'analyze cv again' || lowerResponse === '🔄 analyze cv again') {
-      this.userStates.set(chatId, 'AWAITING_CV');
-      await this.bot.sendMessage(
-        chatId,
-        '🔄 Please upload your CV again (PDF or DOCX)',
-        {
-          reply_markup: {
-            remove_keyboard: true
-          }
-        }
-      );
-    } else if (lowerResponse === 'cancel' || lowerResponse === '❌ cancel') {
-      await this.bot.sendMessage(
-        chatId,
-        'No problem! You can upload a new CV anytime or use /start to begin again.',
-        {
-          reply_markup: {
-            remove_keyboard: true
-          }
-        }
-      );
-      this.userStates.set(chatId, 'IDLE');
-    } else {
-      await this.bot.sendMessage(
-        chatId,
-        'Please respond with "yes" to search for jobs or "no" to cancel.'
-      );
-    }
+    // Since we're not using reply keyboard anymore, just set state to IDLE
+    this.userStates.set(chatId, 'IDLE');
+    
+    await this.bot.sendMessage(
+      chatId,
+      'Please use the commands to interact with the bot. Type /help to see available commands.'
+    );
   }
 
   private escapeMarkdown(text: string): string {
