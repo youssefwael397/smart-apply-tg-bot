@@ -18,6 +18,21 @@ import { CvService } from '../cv/cv.service';
 import { GeminiService } from '../gemini/gemini.service';
 import { JobsService } from '../jobs/jobs.service';
 
+const WELCOME_MESSAGE = (name: string) => `👋 Welcome to *Smart Apply Bot*!\n\n` +
+  `This bot is designed to help you find the most relevant job opportunities based on your CV.\n` +
+  `Here's what you can do:\n\n` +
+  `/start - Start a new session\n` +
+  `/upload_new_cv - Upload a new CV\n` +
+  `/suggest_new_job_titles - Get AI-powered job title suggestions\n` +
+  `/search_for_jobs - Discover job listings based on your profile\n` +
+  `/update_location - Update your preferred job location\n\n` +
+  `📄 To get started, please upload your CV (PDF or DOCX).\n\n` +
+  `🔧 Developed by *Youssef Wael*.\n` +
+  `📧 Email: y.wael.elsayed@gmail.com\n` +
+  `📞 Phone: +20 101 093 2484\n\n` +
+  `💡 If you have any suggestions or need help, feel free to reach out!`;
+
+
 type UserState = 'AWAITING_NAME' | 'AWAITING_CV' | 'AWAITING_CONFIRMATION' | 'AWAITING_LOCATION' | 'IDLE';
 
 interface TelegramMessage {
@@ -181,19 +196,7 @@ export class TelegramService implements OnModuleInit {
       this.userService.createOrUpdateUser(chatId, { name: msg.from?.first_name || 'User' });
       this.userStates.set(chatId, 'AWAITING_CV');
       
-      const welcomeMessage = `👋 Hello ${msg.from?.first_name || 'there'}, and welcome to *Smart Apply Bot*!\n\n` +
-            `This bot is designed to help you find the most relevant job opportunities based on your CV.\n` +
-            `Here's what you can do:\n\n` +
-            `/start - Start a new session\n` +
-            `/upload_new_cv - Upload a new CV\n` +
-            `/suggest_new_job_titles - Get AI-powered job title suggestions\n` +
-            `/search_for_jobs - Discover job listings based on your profile\n` +
-            `/update_location - Update your preferred job location\n\n` +
-            `📄 To get started, please upload your CV (PDF or DOCX).\n\n` +
-            `🔧 Developed with care by *Youssef Wael*.\n` +
-            `📧 Email: youssefwael397@gmail.com\n` +
-            `📞 Phone: +20 101 093 2484\n\n` +
-            `💡 If you have any suggestions or need help, feel free to reach out!`;
+      const welcomeMessage = WELCOME_MESSAGE(msg.from?.first_name);
       
       await this.bot.sendMessage(chatId, welcomeMessage);
     });
