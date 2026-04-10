@@ -8,6 +8,7 @@ import { pipeline } from 'stream';
 import { join } from 'path';
 import * as pdf from 'pdf-parse';
 import * as fs from 'fs/promises';
+import { tmpdir } from 'os';
 
 const streamPipeline = promisify(pipeline);
 import { User } from '../user/user.entity';
@@ -76,10 +77,17 @@ export class TelegramService implements OnModuleInit {
     private readonly jobsService: JobsService,
     private readonly httpService: HttpService
   ) {
-    // Ensure uploads directory exists
-    const uploadsDir = join(process.cwd(), 'uploads');
+    // Use /tmp for uploads on Vercel, otherwise process.cwd()/uploads
+    const isVercel = process.env.VERCEL === '1';
+    const baseDir = isVercel ? tmpdir() : process.cwd();
+    const uploadsDir = join(baseDir, 'uploads');
+    
     if (!existsSync(uploadsDir)) {
-      mkdirSync(uploadsDir, { recursive: true });
+      try {
+        mkdirSync(uploadsDir, { recursive: true });
+      } catch (e) {
+        Logger.warn(`Could not create uploads directory at ${uploadsDir}: ${e.message}`);
+      }
     }
   }
 
@@ -234,8 +242,11 @@ export class TelegramService implements OnModuleInit {
         const file = await this.bot.getFile(document.file_id);
         const fileUrl = `https://api.telegram.org/file/bot${this.configService.get('TELEGRAM_BOT_TOKEN')}/${file.file_path}`;
         
-        // Create temp directory if it doesn't exist
-        const tempDir = join(process.cwd(), 'temp');
+        // Create temp directory in /tmp if on Vercel
+        const isVercel = process.env.VERCEL === '1';
+        const baseDir = isVercel ? tmpdir() : process.cwd();
+        const tempDir = join(baseDir, 'temp');
+        
         if (!existsSync(tempDir)) {
           mkdirSync(tempDir, { recursive: true });
         }
@@ -585,6 +596,12 @@ export class TelegramService implements OnModuleInit {
       );
     } finally {
       this.userStates.set(chatId, 'IDLE');
+    }
+  }
+
+  async handleUpdate(update: any): Promise<void> {
+    if (this.bot) {
+      await this.bot.processUpdate(update);
     }
   }
 }
